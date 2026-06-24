@@ -42,9 +42,10 @@ async def _migrate(conn):
         ],
     }
     for table, columns in new_columns.items():
-        # Use SQLAlchemy inspector (works across SQLite + PostgreSQL)
-        insp = await conn.run_sync(lambda sync_conn: inspect(sync_conn))
-        existing = {col["name"] for col in insp.get_columns(table)}
+        def _get_existing(sync_conn, tbl=table):
+            return {col["name"] for col in inspect(sync_conn).get_columns(tbl)}
+
+        existing = await conn.run_sync(_get_existing)
         for col, ddl in columns:
             if col not in existing:
                 await conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
