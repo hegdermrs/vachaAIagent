@@ -52,7 +52,7 @@ async def send_digest_email():
         opportunity_count=len(opps),
         status="sent" if success else "failed",
         error_message=error,
-        sent_at=datetime.now(timezone.utc),
+        sent_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
     async with async_session() as session:
@@ -91,7 +91,7 @@ async def send_test_email(recipient: str | None = None) -> tuple[bool, str | Non
         opportunity_count=0,
         status="sent" if success else "failed",
         error_message=error,
-        sent_at=datetime.now(timezone.utc),
+        sent_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     async with async_session() as session:
         session.add(log)

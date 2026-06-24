@@ -56,7 +56,8 @@ async def _run_one(name: str, scrape_fn) -> int:
     from datetime import datetime, timezone
     _set_stage(_STAGE_MESSAGES.get(name, "Looking for opportunities…"))
     start = datetime.now(timezone.utc)
-    log = ScrapeLog(scraper_name=name, status="started", started_at=start)
+    naive_start = start.replace(tzinfo=None)
+    log = ScrapeLog(scraper_name=name, status="started", started_at=naive_start)
     try:
         async with async_session() as session:
             session.add(log)
@@ -70,17 +71,22 @@ async def _run_one(name: str, scrape_fn) -> int:
         log.duration_seconds = (datetime.now(timezone.utc) - start).total_seconds()
 
         async with async_session() as session:
-            session.add(log)
+            await session.merge(log)
             await session.commit()
 
         return items_new
     except Exception as e:
         logger.exception(f"Scraper {name} failed")
-        log.status = "failed"
-        log.error_message = str(e)
-        log.completed_at = datetime.now(timezone.utc).isoformat()
         async with async_session() as session:
-            session.add(log)
+            fail_log = ScrapeLog(
+                scraper_name=name,
+                status="failed",
+                started_at=naive_start,
+                error_message=str(e)[:2000],
+                completed_at=datetime.now(timezone.utc).isoformat(),
+                duration_seconds=(datetime.now(timezone.utc) - start).total_seconds(),
+            )
+            session.add(fail_log)
             await session.commit()
         return 0
 
