@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Email History — Varshini{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Email History</h1>
+</div>
+
+{% if logs %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Sent At</th>
+            <th>Recipient</th>
+            <th>Opportunities</th>
+            <th>Status</th>
+            <th>Error</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.sent_at.strftime('%d %b %Y %H:%M') if log.sent_at else 'N/A' }}</td>
+            <td>{{ log.recipient }}</td>
+            <td>{{ log.opportunity_count }}</td>
+            <td>
+                <span class="badge badge-{{ 'success' if log.status == 'sent' else 'error' }}">{{ log.status }}</span>
+            </td>
+            <td>{{ log.error_message or '—' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>No emails have been sent yet. Configure SMTP settings and ensure opportunities are available.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Varshini</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+        }
+        .login-card {
+            background: var(--surface);
+            padding: 36px 32px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-card h1 {
+            font-size: 28px;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+        .login-card p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .login-card .input {
+            width: 100%;
+            margin-bottom: 16px;
+            text-align: center;
+            font-size: 16px;
+            padding: 12px;
+        }
+        .login-card .btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+        }
+        .flash-error {
+            background: var(--error-bg);
+            color: var(--error);
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h1>Varshini</h1>
+            <p>Art Opportunity Agent</p>
+            {{ error }}
+            <form method="post" action="/api/login">
+                <input type="hidden" name="next" value="{{ next }}">
+                <input type="password" name="password" placeholder="Enter dashboard password" class="input" autofocus required>
+                <button type="submit" class="btn btn-primary">Log In</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

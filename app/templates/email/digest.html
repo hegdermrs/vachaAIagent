@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #fafafa; color: #222; line-height: 1.5; }
+.container { max-width: 640px; margin: 0 auto; padding: 20px; }
+.header { background: #1a1a2e; color: #fff; padding: 24px 20px; text-align: center; }
+.header h1 { margin: 0; font-size: 22px; }
+.header p { margin: 4px 0 0; opacity: 0.7; font-size: 13px; }
+.section { margin: 20px 0; }
+.section-title { font-size: 16px; font-weight: 600; color: #1a1a2e; border-bottom: 2px solid #e94560; padding-bottom: 6px; margin-bottom: 12px; }
+.card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+.card-title { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+.card-title a { color: #1a1a2e; text-decoration: none; }
+.card-title a:hover { color: #e94560; }
+.card-meta { font-size: 12px; color: #666; display: flex; gap: 12px; flex-wrap: wrap; }
+.card-meta span { display: inline-flex; align-items: center; gap: 3px; }
+.score { font-size: 11px; color: #e94560; font-weight: 600; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.badge-high { background: #e8f5e9; color: #2e7d32; }
+.badge-medium { background: #fff3e0; color: #ef6c00; }
+.badge-low { background: #f3e5f5; color: #7b1fa2; }
+.footer { text-align: center; padding: 20px; font-size: 11px; color: #999; border-top: 1px solid #e0e0e0; margin-top: 24px; }
+.footer a { color: #1a1a2e; }
+.empty { text-align: center; padding: 30px; color: #999; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Varshini — Art Opportunities Digest</h1>
+    <p>{{ date }}</p>
+</div>
+
+<div class="container">
+    {% if high %}
+    <div class="section">
+        <div class="section-title">High Relevance</div>
+        {% for opp in high %}
+        <div class="card">
+            <div class="card-title"><a href="{{ opp.source_url }}">{{ opp.title }}</a></div>
+            <div class="card-meta">
+                {% if opp.organization %}<span>{{ opp.organization }}</span>{% endif %}
+                {% if opp.opportunity_type %}<span class="badge badge-high">{{ opp.opportunity_type | replace('_', ' ') | title }}</span>{% endif %}
+                {% if opp.deadline %}<span>Deadline: {{ opp.deadline }}</span>{% endif %}
+                {% if opp.location %}<span>{{ opp.location }}</span>{% endif %}
+                <span class="score">{{ (opp.relevance_score * 100) | int }}% match</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if medium %}
+    <div class="section">
+        <div class="section-title">Also Worth Noting</div>
+        {% for opp in medium %}
+        <div class="card">
+            <div class="card-title"><a href="{{ opp.source_url }}">{{ opp.title }}</a></div>
+            <div class="card-meta">
+                {% if opp.organization %}<span>{{ opp.organization }}</span>{% endif %}
+                {% if opp.opportunity_type %}<span class="badge badge-medium">{{ opp.opportunity_type | replace('_', ' ') | title }}</span>{% endif %}
+                {% if opp.deadline %}<span>Deadline: {{ opp.deadline }}</span>{% endif %}
+                {% if opp.location %}<span>{{ opp.location }}</span>{% endif %}
+                <span class="score">{{ (opp.relevance_score * 100) | int }}% match</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if low %}
+    <div class="section">
+        <div class="section-title">Other Opportunities</div>
+        {% for opp in low %}
+        <div class="card">
+            <div class="card-title"><a href="{{ opp.source_url }}">{{ opp.title }}</a></div>
+            <div class="card-meta">
+                {% if opp.organization %}<span>{{ opp.organization }}</span>{% endif %}
+                {% if opp.opportunity_type %}<span class="badge badge-low">{{ opp.opportunity_type | replace('_', ' ') | title }}</span>{% endif %}
+                {% if opp.deadline %}<span>Deadline: {{ opp.deadline }}</span>{% endif %}
+                <span class="score">{{ (opp.relevance_score * 100) | int }}% match</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not high and not medium and not low %}
+    <div class="empty">No new opportunities today. We'll keep looking!</div>
+    {% endif %}
+</div>
+
+<div class="footer">
+    <p>Varshini AI Agent · Configure your preferences on the <a href="#">dashboard</a></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Settings — Varshini{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Settings</h1>
+</div>
+
+<form method="post" action="/api/settings" class="settings-form"
+      hx-post="/api/settings" hx-swap="none" data-toast="Settings saved ✓">
+    <fieldset class="form-section">
+        <legend>AI (DeepSeek)</legend>
+        <div class="form-row">
+            <label for="ai_enabled">Use AI</label>
+            <select id="ai_enabled" name="ai_enabled" class="select">
+                <option value="true" {% if settings.get('ai_enabled', 'true') == 'true' %}selected{% endif %}>On — extract fields & rank with DeepSeek</option>
+                <option value="false" {% if settings.get('ai_enabled', 'true') == 'false' %}selected{% endif %}>Off — use keyword matching</option>
+            </select>
+            <small>When on, opportunities are parsed and scored by the LLM. Falls back to keyword logic automatically if the API key is missing or a request fails.</small>
+        </div>
+        <div class="form-row">
+            <label for="deepseek_api_key">DeepSeek API Key</label>
+            <input type="password" id="deepseek_api_key" name="deepseek_api_key" value="" class="input" autocomplete="off" placeholder="{{ '•••••••• (saved — leave blank to keep)' if settings.get('deepseek_api_key_set') else 'sk-…' }}">
+            <small>Stored encrypted. Get one at platform.deepseek.com.</small>
+        </div>
+        <div class="form-row">
+            <label for="deepseek_model">Model</label>
+            <input type="text" id="deepseek_model" name="deepseek_model" value="{{ settings.get('deepseek_model', 'deepseek-v4-pro') }}" class="input">
+        </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+        <legend>Email Configuration</legend>
+        <div class="form-row">
+            <label for="email_time">Daily email time (UK timezone)</label>
+            <input type="time" id="email_time" name="email_time" value="{{ settings.get('email_time', '08:00') }}" class="input">
+        </div>
+        <div class="form-row">
+            <label for="email_recipient">Recipient email</label>
+            <input type="email" id="email_recipient" name="email_recipient" value="{{ settings.get('email_recipient', '') }}" class="input">
+        </div>
+        <div class="form-row">
+            <label for="scrape_hour">Scrape hour (0-23, UK time)</label>
+            <input type="number" id="scrape_hour" name="scrape_hour" value="{{ settings.get('scrape_hour', '2') }}" min="0" max="23" class="input input-sm">
+        </div>
+        <div class="form-row">
+            <label>Test deliverability</label>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <button type="button" class="btn btn-secondary" hx-post="/api/send-test-email"
+                        hx-target="#test-email-result" hx-swap="innerHTML" hx-disabled-elt="this">
+                    ✉️ Send test email
+                </button>
+                <span id="test-email-result"></span>
+            </div>
+            <small>Sends a quick test message to your recipient address. If you just changed SMTP settings, click “Save All Settings” first.</small>
+        </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+        <legend>SMTP Server</legend>
+        <div class="form-row">
+            <label for="smtp_host">SMTP Host</label>
+            <input type="text" id="smtp_host" name="smtp_host" value="{{ settings.get('smtp_host', 'smtp.gmail.com') }}" class="input">
+        </div>
+        <div class="form-row">
+            <label for="smtp_port">SMTP Port</label>
+            <input type="number" id="smtp_port" name="smtp_port" value="{{ settings.get('smtp_port', '587') }}" class="input input-sm">
+        </div>
+        <div class="form-row">
+            <label for="smtp_user">SMTP Username</label>
+            <input type="text" id="smtp_user" name="smtp_user" value="{{ settings.get('smtp_user', '') }}" class="input">
+        </div>
+        <div class="form-row">
+            <label for="smtp_password">SMTP Password</label>
+            <input type="password" id="smtp_password" name="smtp_password" value="" class="input" autocomplete="off" placeholder="{{ '•••••••• (saved — leave blank to keep)' if settings.get('smtp_password_set') else 'App password' }}">
+        </div>
+        <div class="form-row">
+            <label for="smtp_use_tls">Use TLS</label>
+            <select id="smtp_use_tls" name="smtp_use_tls" class="select">
+                <option value="true" {% if settings.get('smtp_use_tls', 'true') == 'true' %}selected{% endif %}>Yes</option>
+                <option value="false" {% if settings.get('smtp_use_tls', 'true') == 'false' %}selected{% endif %}>No</option>
+            </select>
+        </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+        <legend>Instagram Credentials</legend>
+        <div class="form-row">
+            <label for="instagram_username">Instagram Username</label>
+            <input type="text" id="instagram_username" name="instagram_username" value="{{ settings.get('instagram_username', '') }}" class="input">
+        </div>
+        <div class="form-row">
+            <label for="instagram_password">Instagram Password</label>
+            <input type="password" id="instagram_password" name="instagram_password" value="" class="input" autocomplete="off" placeholder="{{ '•••••••• (saved — leave blank to keep)' if settings.get('instagram_password_set') else 'Password' }}">
+        </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+        <legend>Scraping Configuration</legend>
+        <div class="form-row">
+            <label for="scrape_keywords">Search Keywords</label>
+            <textarea id="scrape_keywords" name="scrape_keywords" rows="8" class="input" placeholder="open call for artists UK&#10;artist residency UK&#10;grant for artists">{{ settings.get('scrape_keywords', '') }}</textarea>
+            <small>Web search queries — one per line.</small>
+        </div>
+        <div class="form-row">
+            <label for="instagram_hashtags">Instagram Hashtags</label>
+            <textarea id="instagram_hashtags" name="instagram_hashtags" rows="8" class="input" placeholder="opencallforartists&#10;artistopportunity&#10;callforartists">{{ settings.get('instagram_hashtags', '') }}</textarea>
+            <small>Hashtags to search on Instagram — one per line (the # is optional).</small>
+        </div>
+        <div class="form-row">
+            <label for="uk_only">Location</label>
+            <select id="uk_only" name="uk_only" class="select">
+                <option value="true" {% if settings.get('uk_only', 'true') == 'true' %}selected{% endif %}>UK only (plus international / online calls open to UK artists)</option>
+                <option value="false" {% if settings.get('uk_only', 'true') == 'false' %}selected{% endif %}>Anywhere (show all locations)</option>
+            </select>
+            <small>“UK only” drops listings restricted to a specific non-UK country or region.</small>
+        </div>
+        <div class="form-row">
+            <label for="max_results_per_source">Max results per source</label>
+            <input type="number" id="max_results_per_source" name="max_results_per_source" value="{{ settings.get('max_results_per_source', '50') }}" class="input input-sm">
+        </div>
+        <div class="form-row">
+            <label for="relevance_threshold">Relevance threshold (0.0 - 1.0)</label>
+            <input type="number" id="relevance_threshold" name="relevance_threshold" value="{{ settings.get('relevance_threshold', '0.2') }}" step="0.01" min="0" max="1" class="input input-sm">
+            <small>Minimum relevance score for opportunities to be included in the email digest.</small>
+        </div>
+    </fieldset>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save All Settings</button>
+        <span id="save-result" class="save-feedback"></span>
+    </div>
+</form>
+{% endblock %}

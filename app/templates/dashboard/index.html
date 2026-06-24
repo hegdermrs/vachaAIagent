@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Varshini{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <div class="header-actions">
+        <button class="btn btn-primary" hx-post="/api/trigger-scrape?which=full"
+                hx-target="#trigger-result" hx-swap="innerHTML" hx-disabled-elt="this">
+            🔍 Find New Opportunities
+        </button>
+        <button class="btn btn-secondary" hx-post="/api/trigger-scrape?which=instagram"
+                hx-target="#trigger-result" hx-swap="innerHTML" hx-disabled-elt="this">
+            📸 Check Instagram
+        </button>
+        <div id="trigger-result" style="display:inline-flex; align-items:center;"></div>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ total_opps }}</div>
+        <div class="stat-label">Total Opportunities</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ unsent_opps }}</div>
+        <div class="stat-label">Unsent</div>
+    </div>
+    <div class="stat-card stat-highlight">
+        <div class="stat-value">{{ high_relevance }}</div>
+        <div class="stat-label">High Relevance (70%+)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ email_time }}</div>
+        <div class="stat-label">Email Time (UK)</div>
+    </div>
+</div>
+
+<div class="info-grid">
+    <div class="info-card">
+        <h2>Scheduler Status</h2>
+        <div class="info-row">
+            <span class="info-label">Full Scrape</span>
+            <span class="info-value">Daily at {{ scrape_time }} · Next: {{ next_scrape }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Email Digest</span>
+            <span class="info-value">Daily at {{ email_time }} · Next: {{ next_email }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Monitored URLs</span>
+            <span class="info-value">Every 4 hours</span>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h2>Last Activity</h2>
+        {% if last_scrape %}
+        <div class="info-row">
+            <span class="info-label">Last Scrape</span>
+            <span class="info-value">
+                {{ last_scrape.started_at.strftime('%d %b %Y %H:%M') if last_scrape.started_at else 'N/A' }}
+                <span class="badge badge-{{ 'success' if last_scrape.status == 'completed' else 'error' }}">{{ last_scrape.status }}</span>
+                {% if last_scrape.items_new %}({{ last_scrape.items_new }} new){% endif %}
+            </span>
+        </div>
+        {% endif %}
+        {% if last_email %}
+        <div class="info-row">
+            <span class="info-label">Last Email</span>
+            <span class="info-value">
+                {{ last_email.sent_at.strftime('%d %b %Y %H:%M') if last_email.sent_at else 'N/A' }}
+                <span class="badge badge-{{ 'success' if last_email.status == 'sent' else 'error' }}">{{ last_email.status }}</span>
+                ({{ last_email.opportunity_count }} ops)
+            </span>
+        </div>
+        {% endif %}
+        {% if not last_scrape and not last_email %}
+        <p class="muted">No activity yet. Run a manual scrape to get started.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="section">
+    <h2>Recent Opportunities</h2>
+    {% if recent_opps %}
+    <div class="table-wrap">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Relevance</th>
+                <th>Deadline</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for opp in recent_opps %}
+            <tr>
+                <td data-label="Title">
+                    <a href="{{ opp.source_url }}" target="_blank" rel="noopener">{{ opp.title[:100] }}</a>
+                    {% if opp.ai_summary %}<div class="cell-summary">{{ opp.ai_summary }}</div>{% endif %}
+                </td>
+                <td data-label="Type"><span class="badge badge-type">{{ opp.opportunity_type or 'other' }}</span></td>
+                <td data-label="Relevance">
+                    <div class="score-bar">
+                        <div class="score-fill" style="width: {{ (opp.relevance_score * 100)|int }}%"></div>
+                        <span>{{ (opp.relevance_score * 100)|int }}%</span>
+                        {% if opp.ai_reasoning %}<span class="ai-flag" title="{{ opp.ai_reasoning }}">AI</span>{% endif %}
+                    </div>
+                </td>
+                <td data-label="Deadline">{{ opp.deadline or 'Unknown' }}</td>
+                <td data-label="Status">{{ 'Sent' if opp.is_sent else 'Pending' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="muted">No opportunities found yet. Set up your settings and trigger a scrape.</p>
+    {% endif %}
+</div>
+{% endblock %}

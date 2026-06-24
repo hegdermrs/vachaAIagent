@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Artist Profile — Varshini{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Artist Profile</h1>
+    <p class="muted">This profile is used to rank opportunities by relevance. Update it to match your practice.</p>
+</div>
+
+<form method="post" action="/api/profile" class="settings-form"
+      hx-post="/api/profile" hx-swap="none" data-toast="Profile saved ✓">
+    <fieldset class="form-section">
+        <legend>Basic Information</legend>
+        <div class="form-row">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" value="{{ profile.name if profile else 'Chandrashekar K' }}" class="input">
+        </div>
+        <div class="form-row">
+            <label for="website">Website</label>
+            <input type="url" id="website" name="website" value="{{ profile.website if profile else '' }}" class="input" placeholder="https://">
+        </div>
+        <div class="form-row">
+            <label for="portfolio_url">Portfolio URL</label>
+            <input type="url" id="portfolio_url" name="portfolio_url" value="{{ profile.portfolio_url if profile else '' }}" class="input" placeholder="https://">
+        </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+        <legend>Bio</legend>
+        <div class="form-row">
+            <label for="bio">Artist Statement / Bio</label>
+            <textarea id="bio" name="bio" rows="8" class="input">{{ profile.bio if profile else '' }}</textarea>
+            <small>Used for keyword matching against opportunity descriptions.</small>
+        </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+        <legend>Practice Details</legend>
+        <div class="form-row">
+            <label for="mediums">Mediums (comma-separated)</label>
+            <input type="text" id="mediums-input" value="{{ mediums_str }}" class="input" oninput="updateJson('mediums-input', 'mediums')">
+            <input type="hidden" id="mediums" name="mediums" value='{{ profile.mediums if profile else '["painting","sculpture","installation","digital / new media","video","performance"]' }}'>
+            <small>Example: painting, sculpture, installation, digital / new media, video, performance</small>
+        </div>
+        <div class="form-row">
+            <label for="themes">Themes (comma-separated)</label>
+            <input type="text" id="themes-input" value="{{ themes_str }}" class="input" oninput="updateJson('themes-input', 'themes')">
+            <input type="hidden" id="themes" name="themes" value='{{ profile.themes if profile else '["identity","migration","displacement","urban landscapes","memory","technology","post-colonial","women","feminist art","body","gender"]' }}'>
+            <small>Example: identity, migration, displacement, urban landscapes, memory</small>
+        </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+        <legend>CV</legend>
+        <div class="form-row">
+            <label for="cv_text">CV Text</label>
+            <textarea id="cv_text" name="cv_text" rows="10" class="input">{{ profile.cv_text if profile else '' }}</textarea>
+            <small>Enter your CV text for keyword matching. Helps rank opportunities that match your exhibition history.</small>
+        </div>
+    </fieldset>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Profile</button>
+        <span id="save-result" class="save-feedback"></span>
+    </div>
+</form>
+
+<script>
+function updateJson(sourceId, targetId) {
+    const input = document.getElementById(sourceId);
+    const target = document.getElementById(targetId);
+    const items = input.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    target.value = JSON.stringify(items);
+}
+</script>
+{% endblock %}

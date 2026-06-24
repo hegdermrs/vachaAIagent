@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>{% block title %}Varshini — Art Call Agent{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-brand">🎨 Varshini</a>
+            <input type="checkbox" id="nav-toggle" class="nav-toggle">
+            <label for="nav-toggle" class="nav-toggle-btn" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </label>
+            <div class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/dashboard/opportunities">Opportunities</a>
+                <a href="/dashboard/history">History</a>
+                <a href="/dashboard/settings">Settings</a>
+                <a href="/dashboard/profile">Profile</a>
+                <a href="/dashboard/urls">URLs</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% if request.query_params.get("flash") %}
+        <div class="flash flash-success">{{ request.query_params.get("flash") }}</div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>Varshini AI Agent · Finds open calls for art across the web and Instagram</p>
+    </footer>
+
+    <div id="toast-container"></div>
+    <script>
+        function showToast(msg, kind) {
+            var c = document.getElementById('toast-container');
+            if (!c) return;
+            var t = document.createElement('div');
+            t.className = 'toast' + (kind ? ' toast--' + kind : '');
+            t.textContent = msg;
+            c.appendChild(t);
+            setTimeout(function () {
+                t.classList.add('hide');
+                setTimeout(function () { t.remove(); }, 320);
+            }, 2600);
+        }
+        // Any element with data-toast shows a toast after its htmx request completes
+        document.body.addEventListener('htmx:afterRequest', function (e) {
+            var el = e.detail && e.detail.elt;
+            if (!el || !el.getAttribute) return;
+            var msg = el.getAttribute('data-toast');
+            if (msg) showToast(msg, e.detail.successful ? 'success' : 'error');
+        });
+    </script>
+</body>
+</html>

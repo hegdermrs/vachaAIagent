@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Opportunities — Varshini{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Opportunities</h1>
+    <span class="count-badge">{{ total }} found</span>
+</div>
+
+<div class="filters">
+    <form method="get" action="/dashboard/opportunities" class="filter-form">
+        <input type="text" name="search" placeholder="Search titles..." value="{{ search }}" class="input">
+        <select name="type" class="select">
+            <option value="">All Types</option>
+            {% for t in types %}
+            <option value="{{ t }}" {% if current_type == t %}selected{% endif %}>{{ t | title | replace('_', ' ') }}</option>
+            {% endfor %}
+        </select>
+        <select name="sent" class="select">
+            <option value="">All</option>
+            <option value="0" {% if current_sent == '0' %}selected{% endif %}>Unsent</option>
+            <option value="1" {% if current_sent == '1' %}selected{% endif %}>Sent</option>
+        </select>
+        <select name="archived" class="select">
+            <option value="">Active</option>
+            <option value="1" {% if current_archived == '1' %}selected{% endif %}>Archived</option>
+        </select>
+        <button type="submit" class="btn btn-secondary">Filter</button>
+        {% if search or current_type or current_sent or current_archived %}
+        <a href="/dashboard/opportunities" class="btn btn-sm">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+{% if opportunities %}
+<div class="table-wrap">
+<table class="table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Source</th>
+            <th>Type</th>
+            <th>Location</th>
+            <th>Relevance</th>
+            <th>Deadline</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for opp in opportunities %}
+        <tr>
+            <td data-label="Title">
+                <a href="{{ opp.source_url }}" target="_blank" rel="noopener">{{ opp.title[:120] }}</a>
+                {% if opp.organization %}<div class="cell-meta">{{ opp.organization }}</div>{% endif %}
+                {% if opp.ai_summary %}<div class="cell-summary">{{ opp.ai_summary }}</div>{% endif %}
+                {% if opp.medium or opp.fee or opp.eligibility %}
+                <div class="cell-tags">
+                    {% if opp.medium %}<span class="tag">{{ opp.medium }}</span>{% endif %}
+                    {% if opp.fee %}<span class="tag">Fee: {{ opp.fee }}</span>{% endif %}
+                    {% if opp.eligibility %}<span class="tag" title="{{ opp.eligibility }}">Eligibility</span>{% endif %}
+                </div>
+                {% endif %}
+            </td>
+            <td data-label="Source">
+                {% if opp.source_type == 'instagram' %}
+                <span class="badge badge-ig">IG</span>
+                {% elif opp.source_type == 'monitored_url' %}
+                <span class="badge badge-monitored">Tracked</span>
+                {% else %}
+                <span class="badge badge-web">Web</span>
+                {% endif %}
+            </td>
+            <td data-label="Type"><span class="badge badge-type">{{ opp.opportunity_type or 'other' }}</span></td>
+            <td data-label="Location">{{ opp.location or '—' }}</td>
+            <td data-label="Relevance">
+                <div class="score-bar">
+                    <div class="score-fill" style="width: {{ (opp.relevance_score * 100)|int }}%"></div>
+                    <span>{{ (opp.relevance_score * 100)|int }}%</span>
+                    {% if opp.ai_reasoning %}<span class="ai-flag" title="{{ opp.ai_reasoning }}">AI</span>{% endif %}
+                </div>
+            </td>
+            <td data-label="Deadline">{{ opp.deadline or 'Unknown' }}</td>
+            <td data-label="Status">{{ 'Sent' if opp.is_sent else 'Pending' }}</td>
+            <td data-label="Actions">
+                <div class="action-btns">
+                    {% if opp.is_archived %}
+                    <button class="btn btn-sm" data-toast="Restored" hx-post="/api/opportunities/{{ opp.id }}/unarchive" hx-target="closest tr" hx-swap="outerHTML swap:0.25s">Restore</button>
+                    {% else %}
+                    <button class="btn btn-sm" data-toast="Archived" hx-post="/api/opportunities/{{ opp.id }}/archive" hx-target="closest tr" hx-swap="outerHTML swap:0.25s">Archive</button>
+                    {% endif %}
+                    <button class="btn btn-sm btn-danger" data-toast="Deleted" hx-delete="/api/opportunities/{{ opp.id }}" hx-target="closest tr" hx-swap="outerHTML swap:0.25s" hx-confirm="Delete this opportunity?">Del</button>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No opportunities match your filters.</p>
+    <a href="/dashboard/opportunities" class="btn btn-secondary">Clear Filters</a>
+</div>
+{% endif %}
+{% endblock %}

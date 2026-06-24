@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Monitored URLs — Varshini{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Monitored URLs</h1>
+    <p class="muted">These sites are scraped on every cycle. Add known aggregator pages for art opportunities.</p>
+</div>
+
+<div class="add-url-form">
+    <form method="post" action="/api/urls/add" hx-post="/api/urls/add" hx-swap="none"
+          data-toast="Site added ✓"
+          hx-on::after-request="if(event.detail.successful){ location.reload(); }">
+        <input type="text" name="label" placeholder="Label (e.g. Res Artis)" class="input" style="width:200px">
+        <input type="url" name="url" placeholder="https://..." class="input" style="flex:1" required>
+        <button type="submit" class="btn btn-primary">Add Site</button>
+    </form>
+</div>
+
+<div id="url-list">
+    {% if urls %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Label</th>
+                <th>URL</th>
+                <th>Type</th>
+                <th>Active</th>
+                <th>Last Scraped</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mu in urls %}
+            <tr>
+                <td>{{ mu.label or '—' }}</td>
+                <td><a href="{{ mu.url }}" target="_blank" rel="noopener">{{ mu.url[:80] }}{% if mu.url|length > 80 %}...{% endif %}</a></td>
+                <td>{{ mu.source_type }}</td>
+                <td>
+                    <span class="badge badge-{{ 'success' if mu.is_active else 'error' }}">{{ 'Active' if mu.is_active else 'Inactive' }}</span>
+                </td>
+                <td>{{ mu.last_scraped_at or 'Never' }}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="btn btn-sm" data-toast="Updated ✓" hx-post="/api/urls/{{ mu.id }}/toggle" hx-swap="none"
+                                hx-on::after-request="if(event.detail.successful){ location.reload(); }">
+                            {{ 'Disable' if mu.is_active else 'Enable' }}
+                        </button>
+                        <button class="btn btn-sm btn-danger" data-toast="Removed" hx-delete="/api/urls/{{ mu.id }}" hx-target="closest tr" hx-swap="outerHTML swap:0.25s" hx-confirm="Remove this site?">
+                            Remove
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>No monitored URLs yet. Add some aggregator sites above.</p>
+        <div class="suggestions">
+            <h3>Suggested URLs to add:</h3>
+            <ul>
+                <li>https://resartis.org/listings/</li>
+                <li>https://www.callforentries.com/</li>
+                <li>https://www.artdeadline.com/</li>
+                <li>https://www.artrabbit.com/opportunities</li>
+                <li>https://www.a-n.co.uk/jobs/</li>
+                <li>https://www.axisweb.org/opportunities/</li>
+                <li>https://www.transartists.org/</li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
