@@ -112,7 +112,7 @@ def _render_email_template(opportunities: list[Opportunity]) -> str:
     with open(template_path, encoding="utf-8") as f:
         template_str = f.read()
 
-    env = Environment(loader=BaseLoader())
+    env = Environment(loader=BaseLoader(), autoescape=True)
     template = env.from_string(template_str)
 
     high = [o for o in opportunities if o.relevance_score >= 0.7]

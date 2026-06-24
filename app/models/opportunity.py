@@ -44,7 +44,7 @@ class Opportunity(Base):
         normalized = title.strip().lower()
         normalized = re.sub(r'[^\w\s]', '', normalized)
         stop_words = ['call for', 'opportunity', 'open call', '2024', '2025', '2026', 'the', 'a', 'an']
-        for sw in sorted(stop_words, key=len, reverse=True):
+        for sw in sorted(stop_words, key=lambda sw: (-len(sw), sw)):
             normalized = normalized.replace(sw, '')
         normalized = re.sub(r'\s+', ' ', normalized).strip()
         return hashlib.sha256(normalized.encode()).hexdigest()

@@ -1,5 +1,6 @@
 """Scheduler — APScheduler with SQLAlchemy job store."""
 import json
+import os
 import time
 from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -9,10 +10,18 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import DATABASE_URL, settings_cache
 
+SCHEDULER_TIMEZONE = os.getenv("TIMEZONE", "Europe/London")
+
 # Convert async DB URL to sync driver for APScheduler's SQLAlchemyJobStore
 _sync_db_url = DATABASE_URL
 
-if _sync_db_url.startswith("postgresql+asyncpg://"):
+if _sync_db_url.startswith("postgres://"):
+    _sync_db_url = _sync_db_url.replace(
+        "postgres://",
+        "postgresql+psycopg2://",
+        1
+    )
+elif _sync_db_url.startswith("postgresql+asyncpg://"):
     _sync_db_url = _sync_db_url.replace(
         "postgresql+asyncpg://",
         "postgresql+psycopg2://",
@@ -38,7 +47,7 @@ jobstores = {
     "default": SQLAlchemyJobStore(url=_sync_db_url)
 }
 
-scheduler = AsyncIOScheduler(jobstores=jobstores, timezone="Europe/London")
+scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=SCHEDULER_TIMEZONE)
 
 
 async def scrape_job():
@@ -69,16 +78,20 @@ def _get_email_cron():
 
 
 def _get_scrape_cron():
-    h = int(settings_cache.get("scrape_hour", "2"))
+    try:
+        h = int(settings_cache.get("scrape_hour", "2"))
+    except (ValueError, TypeError):
+        logger.warning("Invalid scrape_hour setting — defaulting to 2")
+        h = 2
     return {"hour": h, "minute": 0}
 
 
 def setup_scheduler():
     """Add scheduled jobs. Safe to call multiple times — APScheduler ignores duplicates."""
     jobs = [
-        ("full_scrape", scrape_job, CronTrigger(**_get_scrape_cron(), timezone="Europe/London")),
-        ("email_digest", email_job, CronTrigger(**_get_email_cron(), timezone="Europe/London")),
-        ("monitored_check", monitored_job, CronTrigger(hour="*/4", timezone="Europe/London")),
+        ("full_scrape", scrape_job, CronTrigger(**_get_scrape_cron(), timezone=SCHEDULER_TIMEZONE)),
+        ("email_digest", email_job, CronTrigger(**_get_email_cron(), timezone=SCHEDULER_TIMEZONE)),
+        ("monitored_check", monitored_job, CronTrigger(hour="*/4", timezone=SCHEDULER_TIMEZONE)),
     ]
     for job_id, func, trigger in jobs:
         existing = scheduler.get_job(job_id)

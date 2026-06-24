@@ -1,6 +1,6 @@
 """Deduplication service — URL hash + fuzzy title matching."""
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from sqlalchemy import select
 
 from app.database import async_session
@@ -25,7 +25,7 @@ async def filter_duplicates(raw_items: list[dict]) -> list[dict]:
         existing_url_hashes = set(result.scalars().all())
 
         # Check title hash duplicates (90-day window)
-        cutoff = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+        cutoff = datetime.utcnow() - timedelta(days=90)
         result = await session.execute(
             select(Opportunity.title_hash)
             .where(

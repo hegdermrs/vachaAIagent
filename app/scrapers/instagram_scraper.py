@@ -6,11 +6,16 @@ import asyncio
 from pathlib import Path
 
 from app.scrapers.base import BaseScraper, RawOpportunity
-from app.config import settings_cache, BASE_DIR
+from app.config import settings_cache, decrypt_value, BASE_DIR
 
 logger = logging.getLogger("varshini.scraper.instagram")
 
 SESSION_FILE = BASE_DIR / "sessions" / "instagram_session"
+
+try:
+    from instaloader import Instaloader, Hashtag, Profile, Post
+except ImportError:
+    Instaloader = Hashtag = Profile = Post = None
 
 
 class InstagramScraper(BaseScraper):
@@ -24,7 +29,7 @@ class InstagramScraper(BaseScraper):
             hashtags = ["opencallforartists", "artistopportunity", "callforartists"]
 
         username = settings_cache.get("instagram_username", "")
-        password = settings_cache.get("instagram_password", "")
+        password = decrypt_value(settings_cache.get("instagram_password", ""))
 
         all_items = []
         for tag in hashtags[:8]:  # Limit to 8 hashtags to avoid rate limits
@@ -40,8 +45,11 @@ class InstagramScraper(BaseScraper):
         items = []
         try:
             # Run instaloader in a thread pool to avoid blocking the event loop
-            result = await asyncio.to_thread(
-                _instaloader_scrape, hashtag, username, password, SESSION_FILE
+            result = await asyncio.wait_for(
+                asyncio.to_thread(
+                    _instaloader_scrape, hashtag, username, password, SESSION_FILE
+                ),
+                timeout=120,
             )
             items.extend(result)
         except Exception as e:
@@ -52,7 +60,9 @@ class InstagramScraper(BaseScraper):
 
 def _instaloader_scrape(hashtag: str, username: str, password: str, session_file: Path) -> list[dict]:
     """Synchronous instaloader call — runs in a thread."""
-    from instaloader import Instaloader, Hashtag, Profile, Post
+    if Instaloader is None:
+        logger.warning("instaloader not installed — skipping Instagram scrape")
+        return []
 
     loader = Instaloader(
         download_pictures=False,

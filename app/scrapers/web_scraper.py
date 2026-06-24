@@ -45,6 +45,7 @@ class WebScraper(BaseScraper):
                 results = await self._search_keyword(keyword)
                 all_items.extend(results)
                 await asyncio.sleep(2)  # Rate limit between keyword searches
+        self.client = None  # Clear reference after context manager exits
 
         # Deduplicate by URL within this batch
         seen = set()
@@ -80,6 +81,7 @@ class WebScraper(BaseScraper):
 
                 # Try to scrape the actual page for more details
                 details = await self._scrape_page(href)
+                await asyncio.sleep(0.5)  # Polite delay between page scrapes
 
                 opp = RawOpportunity(
                     source_url=href,

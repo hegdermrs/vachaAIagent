@@ -9,6 +9,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
+if SECRET_KEY == "dev-secret-change-me":
+    raise RuntimeError(
+        "SECRET_KEY is still the default value. Set a secure SECRET_KEY in your .env file "
+        "or Railway environment variables before deploying."
+    )
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{BASE_DIR / 'data' / 'varshini.db'}")
 
 # DeepSeek (LLM) — OpenAI-compatible API
@@ -26,6 +31,10 @@ if _enc_key:
 
 def encrypt_value(plaintext: str) -> str:
     if _fernet is None:
+        import logging
+        logging.getLogger("varshini").warning(
+            "ENCRYPTION_KEY not set — sensitive values will be stored as plaintext in the database"
+        )
         return plaintext
     return _fernet.encrypt(plaintext.encode()).decode()
 
@@ -36,8 +45,11 @@ def decrypt_value(ciphertext: str) -> str:
     try:
         return _fernet.decrypt(ciphertext.encode()).decode()
     except Exception:
-        # Value isn't encrypted (e.g. legacy/plaintext) — return as-is
-        return ciphertext
+        import logging
+        logging.getLogger("varshini").warning(
+            "Failed to decrypt a stored value — returning empty string"
+        )
+        return ""
 
 
 # In-memory cache of settings from DB — refreshed on writes

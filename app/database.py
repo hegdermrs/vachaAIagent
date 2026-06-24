@@ -4,9 +4,11 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.config import DATABASE_URL
 
-# Railway injects postgresql:// but SQLAlchemy async needs postgresql+asyncpg://
+# Railway injects postgresql:// or postgres:// but SQLAlchemy async needs postgresql+asyncpg://
 _db_url = DATABASE_URL
-if _db_url.startswith("postgresql://"):
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif _db_url.startswith("postgresql://"):
     _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 engine = create_async_engine(_db_url, echo=False)
@@ -137,7 +139,8 @@ async def _sync_env_settings(session: AsyncSession):
     )
     from sqlalchemy import select
 
-    example = dotenv_values(BASE_DIR / ".env.example")
+    example_path = BASE_DIR / ".env.example"
+    example = dotenv_values(example_path) if example_path.exists() else {}
     rows = {s.key: s for s in (await session.execute(select(Setting))).scalars().all()}
 
     changed = False
@@ -150,6 +153,9 @@ async def _sync_env_settings(session: AsyncSession):
         current = (row.value or "").strip() if row is not None else ""
         # Keep a value only if it's been set to something other than the placeholder
         if current and current != placeholder:
+            continue
+        # Skip overwriting if placeholder is empty and .env.example was missing
+        if not example and current:
             continue
         stored = encrypt_value(env_val) if key in SENSITIVE_SETTINGS else env_val
         if row is not None:

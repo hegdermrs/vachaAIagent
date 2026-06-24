@@ -47,7 +47,7 @@ def _set_stage(message: str) -> None:
     try:
         from app.services.scheduler import set_scrape_stage
         set_scrape_stage(message)
-    except Exception:
+    except ImportError:
         pass
 
 
@@ -206,34 +206,37 @@ async def _store_opportunities(items: list) -> None:
     from sqlalchemy.exc import IntegrityError
 
     stored = 0
-    async with async_session() as session:
-        for item in items:
-            opp = Opportunity(
-                source_url=item["source_url"],
-                source_type=item.get("source_type", "web"),
-                title=item["title"],
-                description=item.get("description", ""),
-                opportunity_type=item.get("opportunity_type"),
-                deadline=item.get("deadline"),
-                location=item.get("location"),
-                organization=item.get("organization"),
-                eligibility=item.get("eligibility"),
-                fee=item.get("fee"),
-                medium=item.get("medium"),
-                ai_summary=item.get("ai_summary"),
-                ai_reasoning=item.get("ai_reasoning"),
-                raw_data=json.dumps(item, default=str),
-                relevance_score=float(item.get("relevance_score", 0)),
-                url_hash=Opportunity.compute_url_hash(item["source_url"]),
-                title_hash=Opportunity.compute_title_hash(item["title"]),
-            )
-            # Per-item savepoint so a single duplicate can't roll back the batch
-            try:
-                async with session.begin_nested():
-                    session.add(opp)
-            except IntegrityError:
-                logger.debug(f"Skipping duplicate: {item['source_url']}")
-                continue
-            stored += 1
-        await session.commit()
+    try:
+        async with async_session() as session:
+            for item in items:
+                opp = Opportunity(
+                    source_url=item["source_url"],
+                    source_type=item.get("source_type", "web"),
+                    title=item["title"],
+                    description=item.get("description", ""),
+                    opportunity_type=item.get("opportunity_type"),
+                    deadline=item.get("deadline"),
+                    location=item.get("location"),
+                    organization=item.get("organization"),
+                    eligibility=item.get("eligibility"),
+                    fee=item.get("fee"),
+                    medium=item.get("medium"),
+                    ai_summary=item.get("ai_summary"),
+                    ai_reasoning=item.get("ai_reasoning"),
+                    raw_data=json.dumps(item, default=str),
+                    relevance_score=float(item.get("relevance_score", 0)),
+                    url_hash=Opportunity.compute_url_hash(item["source_url"]),
+                    title_hash=Opportunity.compute_title_hash(item["title"]),
+                )
+                # Per-item savepoint so a single duplicate can't roll back the batch
+                try:
+                    async with session.begin_nested():
+                        session.add(opp)
+                except IntegrityError:
+                    logger.debug(f"Skipping duplicate: {item['source_url']}")
+                    continue
+                stored += 1
+            await session.commit()
+    except Exception:
+        logger.exception("Failed to store opportunities — rolling back batch")
     return stored
