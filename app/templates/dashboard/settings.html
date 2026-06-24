@@ -57,6 +57,18 @@
     </fieldset>
 
     <fieldset class="form-section">
+        <legend>Email Provider</legend>
+        <div class="form-row">
+            <label for="email_provider">Send Method</label>
+            <select id="email_provider" name="email_provider" class="select">
+                <option value="smtp" {% if settings.get('email_provider', 'smtp') == 'smtp' %}selected{% endif %}>SMTP (Gmail, etc.)</option>
+                <option value="resend_api" {% if settings.get('email_provider') == 'resend_api' %}selected{% endif %}>Resend HTTP API (works on Railway)</option>
+            </select>
+            <small>Use "Resend HTTP API" if SMTP is blocked by your hosting platform (e.g. Railway). Sign up at resend.com, verify your domain, and paste the API key as SMTP Password.</small>
+        </div>
+    </fieldset>
+
+    <fieldset class="form-section">
         <legend>SMTP Server</legend>
         <div class="form-row">
             <label for="smtp_host">SMTP Host</label>

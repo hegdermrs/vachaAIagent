@@ -1,4 +1,4 @@
-"""Email service — builds and sends HTML digest emails via SMTP."""
+"""Email service — builds and sends HTML digest emails via SMTP or HTTP API (Resend)."""
 import json
 import logging
 from datetime import datetime, timezone
@@ -6,6 +6,7 @@ from aiosmtplib import SMTP
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+import httpx
 from app.database import async_session
 from app.config import settings_cache, decrypt_value
 from app.models.opportunity import Opportunity
@@ -43,7 +44,7 @@ async def send_digest_email():
         return
 
     html_body = _render_email_template(opps)
-    success, error = await _send_smtp(recipient, "Varshini — Art Opportunities Digest", html_body)
+    success, error = await _send_email(recipient, "Varshini — Art Opportunities Digest", html_body)
 
     log = EmailLog(
         recipient=recipient,
@@ -82,7 +83,7 @@ async def send_test_email(recipient: str | None = None) -> tuple[bool, str | Non
         mark it &ldquo;Not spam&rdquo; so future digests reach your inbox.</p>
     </div>
     """
-    success, error = await _send_smtp(recipient, "Varshini — Test Email ✓", html)
+    success, error = await _send_email(recipient, "Varshini — Test Email ✓", html)
 
     log = EmailLog(
         recipient=recipient,
@@ -102,6 +103,14 @@ async def send_test_email(recipient: str | None = None) -> tuple[bool, str | Non
     else:
         logger.warning(f"Test email failed: {error}")
     return success, error
+
+
+async def _send_email(recipient: str, subject: str, html_body: str) -> tuple[bool, str | None]:
+    """Route to SMTP or Resend HTTP API based on email_provider setting."""
+    provider = settings_cache.get("email_provider", "smtp")
+    if provider == "resend_api":
+        return await _send_via_http_api(recipient, subject, html_body)
+    return await _send_smtp(recipient, subject, html_body)
 
 
 def _render_email_template(opportunities: list[Opportunity]) -> str:
@@ -132,8 +141,6 @@ async def _send_smtp(recipient: str, subject: str, html_body: str) -> tuple[bool
     if not user or not password:
         return False, "SMTP credentials not configured"
 
-    # Port 465 = implicit TLS; port 587/25 = STARTTLS (upgrade after connecting).
-    # Using implicit TLS on 587 causes an SSL "wrong version number" error.
     implicit_tls = use_tls and port == 465
     start_tls = use_tls and port != 465
 
@@ -152,4 +159,35 @@ async def _send_smtp(recipient: str, subject: str, html_body: str) -> tuple[bool
         return True, None
     except Exception as e:
         logger.exception("SMTP send failed")
+        return False, str(e)
+
+
+async def _send_via_http_api(recipient: str, subject: str, html_body: str) -> tuple[bool, str | None]:
+    """Send via Resend REST API (HTTP, works from Railway where SMTP is blocked)."""
+    api_key = decrypt_value(settings_cache.get("smtp_password", ""))
+    from_addr = settings_cache.get("smtp_user", "")
+
+    if not api_key or not from_addr:
+        return False, "Resend API key (smtp_password) and sender email (smtp_user) are required"
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                json={
+                    "from": from_addr,
+                    "to": [recipient],
+                    "subject": subject,
+                    "html": html_body,
+                },
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+            )
+        if resp.status_code in (200, 201):
+            return True, None
+        return False, f"Resend API returned {resp.status_code}: {resp.text[:500]}"
+    except Exception as e:
+        logger.exception("Resend HTTP send failed")
         return False, str(e)

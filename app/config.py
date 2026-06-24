@@ -63,6 +63,7 @@ DEFAULT_SETTINGS: dict[str, str] = {
     "smtp_user": os.getenv("SMTP_USER", ""),
     "smtp_password": "",  # loaded (and encrypted) from .env via ENV_BACKED_SETTINGS
     "smtp_use_tls": os.getenv("SMTP_USE_TLS", "true"),
+    "email_provider": os.getenv("EMAIL_PROVIDER", "smtp"),  # "smtp" or "resend_api"
     "instagram_username": os.getenv("INSTAGRAM_USERNAME", ""),
     "instagram_password": "",  # loaded (and encrypted) from .env via ENV_BACKED_SETTINGS
     "scrape_keywords": '["open call for artists UK","artist residency UK","grant for artists","art competition UK","exhibition opportunity","call for entries art","artist fellowship","public art commission","open call art 2025","international open call artists"]',
