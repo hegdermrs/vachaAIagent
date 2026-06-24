@@ -27,12 +27,6 @@ elif _sync_db_url.startswith("postgresql+asyncpg://"):
         "postgresql+psycopg2://",
         1
     )
-elif _sync_db_url.startswith("postgres://"):
-    _sync_db_url = _sync_db_url.replace(
-        "postgres://",
-        "postgresql+psycopg2://",
-        1
-    )
 elif _sync_db_url.startswith("postgresql://"):
     _sync_db_url = _sync_db_url.replace(
         "postgresql://",
