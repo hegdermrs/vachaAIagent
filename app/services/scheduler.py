@@ -9,8 +9,30 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.config import DATABASE_URL, settings_cache
 
-# Replace aiosqlite with the sync sqlite driver for APScheduler
-_sync_db_url = DATABASE_URL.replace("sqlite+aiosqlite:///", "sqlite:///").replace("sqlite+aiosqlite://", "sqlite://")
+# Convert async DB URL to sync driver for APScheduler's SQLAlchemyJobStore
+_sync_db_url = DATABASE_URL
+
+if _sync_db_url.startswith("postgresql+asyncpg://"):
+    _sync_db_url = _sync_db_url.replace(
+        "postgresql+asyncpg://",
+        "postgresql+psycopg2://",
+        1
+    )
+elif _sync_db_url.startswith("postgres://"):
+    _sync_db_url = _sync_db_url.replace(
+        "postgres://",
+        "postgresql+psycopg2://",
+        1
+    )
+elif _sync_db_url.startswith("postgresql://"):
+    _sync_db_url = _sync_db_url.replace(
+        "postgresql://",
+        "postgresql+psycopg2://",
+        1
+    )
+else:
+    # SQLite: replace aiosqlite with sync sqlite driver
+    _sync_db_url = _sync_db_url.replace("sqlite+aiosqlite:///", "sqlite:///").replace("sqlite+aiosqlite://", "sqlite://")
 
 jobstores = {
     "default": SQLAlchemyJobStore(url=_sync_db_url)
