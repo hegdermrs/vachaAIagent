@@ -26,6 +26,8 @@ async def init_db():
 
 async def _migrate(conn):
     """Add columns introduced after the initial release (no Alembic here)."""
+    from sqlalchemy import text, inspect
+
     new_columns = {
         "opportunities": [
             ("fee", "VARCHAR"),
@@ -35,8 +37,9 @@ async def _migrate(conn):
         ],
     }
     for table, columns in new_columns.items():
-        result = await conn.exec_driver_sql(f"PRAGMA table_info({table})")
-        existing = {row[1] for row in result}
+        # Use SQLAlchemy inspector (works across SQLite + PostgreSQL)
+        insp = await conn.run_sync(lambda sync_conn: inspect(sync_conn))
+        existing = {col["name"] for col in insp.get_columns(table)}
         for col, ddl in columns:
             if col not in existing:
                 await conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
